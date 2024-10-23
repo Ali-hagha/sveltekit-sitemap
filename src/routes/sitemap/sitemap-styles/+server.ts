@@ -10,23 +10,28 @@ export const GET = async () => {
         <head>
             <title>Sitemap</title>
             <style>
-                body {
-                    font-family: Arial, sans-serif;
-                }
-                table {
-                    border-collapse: collapse;
-                    width: 100%;
-                }
-                th, td {
-                    padding: 8px 12px;
-                    border: 1px solid #ddd;
-                }
-                th {
-                    background-color: #f4f4f4;
-                }
-                tr:nth-child(even) {
-                    background-color: #f9f9f9;
-                }
+                    body {
+                        font-family: Arial, sans-serif;
+                        margin: 20px;
+                    }
+                    table {
+                        border-collapse: collapse;
+                        width: 100%;
+                    }
+                    th, td {
+                        padding: 10px;
+                        border: 1px solid #ddd;
+                    }
+                    th {
+                        background-color: #f2f2f2;
+                    }
+                    tr:nth-child(even) {
+                        background-color: #f9f9f9;
+                    }
+                    a {
+                        text-decoration: none;
+                        color: #1a73e8;
+                    }
             </style>
         </head>
         <body>

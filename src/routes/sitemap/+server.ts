@@ -1,51 +1,86 @@
 import { error } from '@sveltejs/kit';
 
-type Blog = {
-	id: 141;
-	documentId: string;
-	title: string;
-	slug: string;
-	createdAt: string;
-	updatedAt: string;
-	publishedAt: string;
-};
-// src/routes/sitemap-posts.xml/+server.js
+const strapiBaseUrl = 'http://localhost:5656/api';
+
 export const GET = async () => {
-	const response = await fetch('http://localhost:5656/api/blog-articles');
+	const latestBlogArticle = await getLatestBlogArticle();
+	const latestDocArticle = await getLatestDocArticle();
+	const latestPage = await getLatestPage();
 
-	if (!response.ok) {
-		throw error(500, 'Failed to fetch blog posts');
+	const xmlSitemapIndex = `<?xml version="1.0" encoding="UTF-8"?>
+	<?xml-stylesheet type="text/xsl" href="http://192.168.50.105:5174/sitemap/index-styles"?>
+	<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+	${
+		latestBlogArticle
+			? `<sitemap>
+      		<loc>/sitemap/blog-sitemap</loc>
+      		<lastmod>${latestBlogArticle.updatedAt}</lastmod>
+   		</sitemap>`
+			: ''
 	}
+	${
+		latestDocArticle
+			? `<sitemap>
+      		<loc>/sitemap/doc-sitemap</loc>
+      		<lastmod>${latestDocArticle.updatedAt}</lastmod>
+   		</sitemap>`
+			: ''
+	}
+	${
+		latestPage
+			? `<sitemap>
+      		<loc>/sitemap/page-sitemap</loc>
+      		<lastmod>${latestPage.updatedAt}</lastmod>
+   		</sitemap>`
+			: ''
+	}
+	</sitemapindex>
+	`;
 
-	const data = await response.json();
-	const blogs = data.data as Blog[];
-
-	const xmlSitemap = generateSitemap(blogs);
-
-	return new Response(xmlSitemap, {
+	return new Response(xmlSitemapIndex, {
 		headers: {
 			'Content-Type': 'application/xml'
 		}
 	});
 };
 
-function generateSitemap(blogs: Blog[]) {
-	const urls = blogs
-		.map((blog) => {
-			const lastmod = new Date(blog.updatedAt).toISOString().split('T')[0];
-			return `
-    <url>
-        <loc>https://your-domain.com/blog/${blog.slug}</loc>
-        <lastmod>${lastmod}</lastmod>
-        <changefreq>monthly</changefreq>
-        <priority>0.8</priority>
-    </url>`;
-		})
-		.join('');
+async function getLatestBlogArticle() {
+	const blogRes = await fetch(
+		`${strapiBaseUrl}/blog-articles?sort=publishedAt:desc&pagination[limit]=1`
+	);
 
-	return `<?xml version="1.0" encoding="UTF-8"?>
-<?xml-stylesheet type="text/xsl" href="http://192.168.50.105:5174/sitemap/styles"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-    ${urls}
-</urlset>`;
+	if (!blogRes.ok) {
+		error(500, 'Failed to fetch blog posts');
+	}
+
+	const blogData = await blogRes.json();
+	const blogPosts = blogData.data as Article[];
+	return blogPosts[0];
+}
+
+async function getLatestDocArticle() {
+	const docRes = await fetch(
+		`${strapiBaseUrl}/doc-articles?sort=publishedAt:desc&pagination[limit]=1`
+	);
+
+	if (!docRes.ok) {
+		error(500, 'Failed to fetch doc posts');
+	}
+
+	const docData = await docRes.json();
+	const docPosts = docData.data as Article[];
+	return docPosts[0];
+}
+
+async function getLatestPage() {
+	const pageRes = await fetch(`${strapiBaseUrl}/pages?sort=publishedAt:desc&pagination[limit]=1`);
+
+	if (!pageRes.ok) {
+		console.log(pageRes);
+		error(500, 'Failed to fetch page data');
+	}
+
+	const pageData = await pageRes.json();
+	const pages = pageData.data as Page[];
+	return pages[0];
 }
